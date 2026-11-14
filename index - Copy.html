@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16a34a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="רשימת קניות">
+<title>רשימת הקניות שלי</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+<style>
+  /* ========== Base / Variables (mobile first) ========== */
+  :root {
+    --green: #16a34a;
+    --green-dark: #15803d;
+    --green-50: #f0fdf4;
+    --green-100: #dcfce7;
+    --green-200: #bbf7d0;
+    --red: #dc2626;
+    --red-dark: #b91c1c;
+    --red-50: #fef2f2;
+    --red-100: #fee2e2;
+    --red-200: #fecaca;
+    --bg: #f3f6f4;
+    --card: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --line: #f1f5f9;
+    --radius: 14px;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+    --bar-h: 78px;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Rubik", "Assistant", "Noto Sans Hebrew", "Arial Hebrew", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+    line-height: 1.4;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body.modal-open { overflow: hidden; }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; touch-action: manipulation; }
+  .visually-hidden {
+    position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  :focus-visible { outline: 3px solid #86efac; outline-offset: 2px; }
+
+  /* ========== Header ========== */
+  .app-header {
+    color: #fff;
+    padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
+  }
+  .header-inner {
+    max-width: 1200px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .app-title { margin: 0; font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+  .app-sub { margin: 2px 0 0; font-size: .85rem; opacity: .9; }
+  /* Profiles: each one gets its own header colour so the active list is always obvious */
+  body { --profile: #0f766e; --profile-bg: #ccfbf1; --profile-grad: linear-gradient(135deg, #16a34a 0%, #0f766e 100%); }
+  body[data-profile="evyatar"] { --profile: #6d28d9; --profile-bg: #ede9fe; --profile-grad: linear-gradient(135deg, #8b5cf6 0%, #4f46e5 100%); }
+  .app-header { background: var(--profile-grad); }
+  .profile-switch {
+    max-width: 1200px; margin: 12px auto 0;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+    background: rgba(0,0,0,.2); padding: 5px; border-radius: 16px;
+  }
+  .profile-btn {
+    min-height: 52px; border: 0; border-radius: 12px; background: transparent; color: #fff;
+    font-weight: 800; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 4px 6px; line-height: 1.15; white-space: nowrap; min-width: 0;
+  }
+  .profile-btn .p-ico { font-size: 1.2rem; }
+  .profile-btn .p-count {
+    font-size: .8rem; background: rgba(255,255,255,.25); border-radius: 999px; padding: 1px 8px; font-variant-numeric: tabular-nums;
+  }
+  .profile-btn[aria-checked="true"] { background: #fff; color: var(--profile); box-shadow: 0 2px 8px rgba(0,0,0,.18); }
+  .profile-btn[aria-checked="true"] .p-count { background: var(--profile-bg); }
+  .profile-btn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  .stat.profile-badge { background: var(--profile-bg); color: var(--profile); }
+  @media (max-width: 419px) {
+    .stat { padding: 5px 10px; font-size: .85rem; }
+    .stat .num { font-size: 1rem; }
+    .profile-btn { font-size: .95rem; }
+  }
+  @media (max-width: 359px) {
+    .profile-btn .p-ico { display: none; }
+  }
+  .mode-pill {
+    flex: none; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35);
+    padding: 6px 12px; border-radius: 999px; font-size: .85rem; font-weight: 700; white-space: nowrap;
+  }
+
+  /* ========== Sticky bar: counters + search + tools ========== */
+  .sticky {
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(243,246,244,.97);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 12px 8px;
+  }
+  .sticky-inner { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
+  .stats { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .stat {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: .9rem;
+  }
+  .stat .num { font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+  .stat.green { background: var(--green-100); color: var(--green-dark); }
+  .stat.red { background: var(--red-100); color: var(--red-dark); }
+  .stat.red.zero { background: #eef0f2; color: var(--muted); }
+  .stats-hint { font-size: .85rem; color: var(--muted); }
+
+  .search { position: relative; }
+  .search input {
+    width: 100%; height: 48px; padding: 0 44px;
+    border: 1.5px solid var(--border); border-radius: 12px; background: #fff;
+    font-size: 16px; /* prevents iOS zoom */
+    -webkit-appearance: none; appearance: none;
+  }
+  .search input:focus { border-color: var(--green); outline: none; box-shadow: 0 0 0 3px rgba(22,163,74,.18); }
+  .search input::-webkit-search-cancel-button { display: none; }
+  .search-icon {
+    position: absolute; inset-inline-start: 14px; top: 50%; transform: translateY(-50%);
+    pointer-events: none; font-size: 1.05rem; opacity: .7;
+  }
+  .search-clear {
+    position: absolute; inset-inline-end: 4px; top: 50%; transform: translateY(-50%);
+    width: 40px; height: 40px; border: 0; border-radius: 10px; background: transparent;
+    font-size: 1.1rem; color: var(--muted); display: none;
+  }
+  .search-clear.show { display: block; }
+
+  .toolbar { display: flex; gap: 8px; align-items: center; }
+  .chips {
+    display: flex; gap: 6px; overflow-x: auto; flex: 1; min-width: 0;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 2px;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: none; min-height: 40px; padding: 0 14px; border-radius: 999px;
+    border: 1.5px solid var(--border); background: #fff; font-weight: 700; font-size: .9rem; white-space: nowrap;
+  }
+  .chip.active { background: var(--green); border-color: var(--green); color: #fff; }
+  .chip.chip-urgent.active { background: var(--red); border-color: var(--red); }
+  .tool-btn {
+    flex: none; min-height: 40px; padding: 0 12px; border-radius: 10px;
+    border: 1.5px solid var(--border); background: #fff; font-weight: 700; font-size: .85rem; white-space: nowrap;
+  }
+  .tool-btn:disabled { opacity: .45; cursor: default; }
+  .tool-btn.active { background: var(--green-100); border-color: var(--green-200); color: var(--green-dark); }
+
+  /* Shopping tools */
+  .shop-tools { display: none; flex-direction: column; gap: 8px; }
+  .progress-row { display: flex; align-items: center; gap: 10px; }
+  .progress { flex: 1; height: 10px; background: #e5e7eb; border-radius: 999px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0; background: var(--green); border-radius: 999px; transition: width .2s; }
+  .progress-text { font-size: .9rem; font-weight: 700; color: var(--green-dark); white-space: nowrap; }
+  .shop-tools .toolbar .tool-btn { flex: 1 1 0; min-width: 0; white-space: normal; line-height: 1.2; padding: 4px 8px; }
+
+  body.is-shopping .catalog-tools { display: none; }
+  body.is-shopping .shop-tools { display: flex; }
+
+  /* ========== Main ========== */
+  main {
+    max-width: 1200px; margin: 0 auto;
+    padding: 12px 12px calc(var(--bar-h) + 28px + env(safe-area-inset-bottom));
+  }
+
+  /* Catalog grid */
+  .catalog { display: grid; grid-template-columns: 1fr; gap: 12px; align-items: start; }
+  .category { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .cat-head { display: flex; align-items: stretch; }
+  .cat-toggle {
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; min-height: 60px; background: none; border: 0; text-align: start;
+  }
+  .cat-icon { font-size: 1.6rem; flex: none; line-height: 1; }
+  .cat-name { flex: 1; min-width: 0; font-weight: 800; font-size: 1.05rem; overflow-wrap: anywhere; }
+  .cat-badges { display: flex; gap: 4px; flex: none; }
+  .cat-count {
+    font-size: .8rem; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+    background: #f3f4f6; color: var(--muted); white-space: nowrap;
+  }
+  .cat-count.has { background: var(--green-100); color: var(--green-dark); }
+  .cat-count.urgent { background: var(--red-100); color: var(--red-dark); }
+  .chev { flex: none; font-size: 1rem; color: var(--muted); transition: transform .15s; }
+  .category.open .chev { transform: rotate(180deg); }
+  .cat-del {
+    flex: none; width: 48px; border: 0; background: none; color: var(--muted); font-size: 1.1rem;
+    border-inline-start: 1px solid var(--line);
+  }
+  .cat-empty { margin: 0; padding: 14px 16px; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--border); }
+
+  .product-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border); }
+  .product {
+    display: flex; align-items: center; gap: 6px;
+    padding: 2px 10px 2px 8px;
+    border-bottom: 1px solid var(--line);
+    border-inline-start: 5px solid transparent;
+  }
+  .product:last-child { border-bottom: 0; }
+  .product.needed { background: var(--green-50); border-inline-start-color: var(--green); }
+  .product.needed.urgent { background: var(--red-50); border-inline-start-color: var(--red); }
+  .product.flash { background: #fef9c3 !important; }
+
+  .check {
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px;
+    min-height: 52px; cursor: pointer; padding: 4px 4px;
+  }
+  .check input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+  .box {
+    flex: none; width: 28px; height: 28px; border-radius: 8px;
+    border: 2px solid #cbd5e1; background: #fff;
+    display: grid; place-items: center; color: #fff; font-weight: 900; font-size: 1rem;
+  }
+  .check input:checked + .box { background: var(--green); border-color: var(--green); }
+  .check input:checked + .box::after { content: "✓"; }
+  .product.urgent .check input:checked + .box { background: var(--red); border-color: var(--red); }
+  .check input:focus-visible + .box { outline: 3px solid #86efac; outline-offset: 2px; }
+  .pname { font-size: 1rem; color: #374151; overflow-wrap: anywhere; }
+  .product.needed .pname { font-weight: 700; color: var(--text); }
+  .pname mark { background: #fde68a; color: inherit; border-radius: 3px; padding: 0 1px; }
+  .tag-custom {
+    display: inline-block; margin-inline-start: 6px; font-size: .7rem; font-weight: 700;
+    background: #e0e7ff; color: #3730a3; padding: 1px 7px; border-radius: 999px; vertical-align: middle;
+  }
+
+  .urg-btn {
+    flex: none; min-height: 40px; padding: 0 12px; border-radius: 999px;
+    font-weight: 800; font-size: .85rem; white-space: nowrap; border: 1.5px solid;
+  }
+  .urg-btn.is-urgent { background: var(--red); border-color: var(--red); color: #fff; }
+  .urg-btn.not-urgent { background: #fff; border-color: #86efac; color: var(--green-dark); }
+  .del-btn {
+    flex: none; width: 40px; height: 40px; border: 0; border-radius: 10px; background: none; font-size: 1.05rem; opacity: .7;
+  }
+  .del-btn:hover { background: var(--red-50); opacity: 1; }
+
+  /* Shopping mode list */
+  .shopping { max-width: 760px; margin: 0 auto; }
+  .shop-section { margin-bottom: 18px; }
+  .shop-title {
+    display: flex; align-items: center; gap: 8px; margin: 6px 4px 10px;
+    font-size: 1.15rem; font-weight: 800; color: var(--green-dark);
+  }
+  .shop-title.urgent { color: var(--red); }
+  .shop-title .cnt {
+    font-size: .85rem; background: var(--green-100); padding: 2px 10px; border-radius: 999px;
+  }
+  .shop-title.urgent .cnt { background: var(--red-100); }
+  .shop-group { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 12px; }
+  .shop-group.urgent-group { border: 2px solid var(--red-200); }
+  .shop-group-head {
+    padding: 9px 16px; font-weight: 800; font-size: .95rem; color: #4b5563;
+    background: #f9fafb; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .shop-item {
+    display: flex; align-items: stretch;
+    border-bottom: 1px solid var(--line);
+    border-inline-start: 6px solid var(--green);
+  }
+  .shop-item:last-child { border-bottom: 0; }
+  .shop-item.urgent { border-inline-start-color: var(--red); background: #fff8f8; }
+  .shop-main {
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px;
+    padding: 12px 14px; min-height: 66px; background: none; border: 0; text-align: start;
+  }
+  .circle {
+    flex: none; width: 34px; height: 34px; border-radius: 50%;
+    border: 2.5px solid #cbd5e1; background: #fff;
+    display: grid; place-items: center; color: #fff; font-weight: 900; font-size: 1.1rem;
+  }
+  .shop-item.urgent .circle { border-color: #fca5a5; }
+  .shop-text { min-width: 0; display: flex; flex-direction: column; }
+  .shop-name { font-size: 1.2rem; font-weight: 700; overflow-wrap: anywhere; }
+  .shop-name mark { background: #fde68a; color: inherit; border-radius: 3px; }
+  .shop-meta { font-size: .8rem; color: var(--muted); margin-top: 2px; }
+  .shop-item.purchased { background: #f9fafb; border-inline-start-color: #d1d5db; }
+  .shop-item.purchased .circle { background: var(--green); border-color: var(--green); }
+  .shop-item.purchased .shop-name { text-decoration: line-through; color: #9ca3af; font-weight: 500; }
+  .urg-mini {
+    flex: none; width: 66px; border: 0; border-inline-start: 1px solid var(--line);
+    background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; font-size: 1.15rem; color: var(--green-dark);
+  }
+  .urg-mini span { font-size: .72rem; font-weight: 800; }
+  .urg-mini.is-urgent { color: var(--red); }
+  .shop-item.purchased .urg-mini { opacity: .45; }
+
+  .done-banner {
+    background: var(--green-100); color: var(--green-dark); border-radius: var(--radius);
+    padding: 14px 16px; margin-bottom: 14px; font-weight: 800; text-align: center;
+  }
+
+  /* Empty states */
+  .empty {
+    background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+    text-align: center; padding: 36px 20px; max-width: 560px; margin: 10px auto;
+  }
+  .empty .big { font-size: 3.2rem; line-height: 1; margin-bottom: 10px; }
+  .empty h2 { margin: 0 0 6px; font-size: 1.2rem; }
+  .empty p { margin: 0 0 16px; color: var(--muted); }
+  .btn {
+    min-height: 48px; padding: 0 20px; border-radius: 12px; border: 0;
+    font-weight: 800; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-green:active { background: var(--green-dark); }
+  .btn-red { background: var(--red); color: #fff; }
+  .btn-ghost { background: #f3f4f6; color: var(--text); }
+  .btn-light { background: var(--green-50); color: var(--green-dark); border: 1.5px solid var(--green-200); }
+
+  /* ========== Bottom action bar ========== */
+  .bottom-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
+    background: rgba(255,255,255,.98);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 18px rgba(0,0,0,.07);
+    padding: 10px max(12px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+  .bar-inner { max-width: 760px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; }
+  .bar-btn {
+    min-height: 58px; border-radius: 14px; border: 0; font-weight: 800; font-size: .82rem;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 6px;
+    line-height: 1.15; text-align: center;
+  }
+  .bar-btn .ico { font-size: 1.35rem; line-height: 1; }
+  .bar-btn.primary { background: var(--green); color: #fff; flex-direction: row; gap: 8px; font-size: 1.05rem; }
+  .bar-btn.primary:active { background: var(--green-dark); }
+  body.is-shopping .bar-btn.primary { background: #0f766e; }
+  .bar-btn.secondary { background: var(--green-50); color: var(--green-dark); border: 1.5px solid var(--green-200); }
+  .bar-btn.danger { background: #fff; color: var(--red); border: 1.5px solid var(--red-200); }
+  .bar-btn.danger:active { background: var(--red-50); }
+  .badge {
+    background: #fff; color: var(--green-dark); border-radius: 999px; padding: 1px 9px;
+    font-size: .9rem; min-width: 26px; font-variant-numeric: tabular-nums;
+  }
+  body.is-shopping .badge { color: #0f766e; }
+
+  /* ========== Modals (bottom sheet on mobile) ========== */
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 50; background: rgba(15,23,42,.5);
+    display: none; align-items: flex-end; justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: #fff; width: 100%; max-width: 520px;
+    border-radius: 20px 20px 0 0;
+    padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+    max-height: 92vh; max-height: 92dvh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+  .modal-head h2 { margin: 0; font-size: 1.25rem; }
+  .modal-close { width: 44px; height: 44px; border: 0; border-radius: 12px; background: #f3f4f6; font-size: 1.1rem; }
+  .field { margin-bottom: 14px; }
+  .field > label, .field-label { display: block; font-weight: 800; margin-bottom: 6px; font-size: .95rem; }
+  .field input[type="text"], .field select {
+    width: 100%; height: 50px; padding: 0 14px; border: 1.5px solid var(--border); border-radius: 12px;
+    background: #fff; font-size: 16px; -webkit-appearance: none; appearance: none;
+  }
+  .field select {
+    background-image: linear-gradient(45deg, transparent 50%, #6b7280 50%), linear-gradient(135deg, #6b7280 50%, transparent 50%);
+    background-position: 18px 22px, 24px 22px; background-size: 6px 6px; background-repeat: no-repeat; padding-left: 40px;
+  }
+  .field input:focus, .field select:focus { border-color: var(--green); outline: none; box-shadow: 0 0 0 3px rgba(22,163,74,.18); }
+  .new-cat { background: #f9fafb; border: 1px dashed #d1d5db; border-radius: 12px; padding: 12px; margin-bottom: 14px; }
+  .new-cat-row { display: grid; grid-template-columns: 1fr 92px; gap: 8px; }
+  .new-cat .field { margin-bottom: 0; }
+  .error { color: var(--red); font-size: .85rem; font-weight: 700; margin-top: 6px; min-height: 1em; }
+  .segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .segmented label {
+    display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 50px;
+    border: 1.5px solid var(--border); border-radius: 12px; font-weight: 800; cursor: pointer; background: #fff;
+  }
+  .segmented input { position: absolute; opacity: 0; pointer-events: none; }
+  .segmented input:focus-visible + span { outline: 3px solid #86efac; outline-offset: 4px; border-radius: 6px; }
+  .segmented label.sel-normal { background: var(--green-50); border-color: var(--green); color: var(--green-dark); }
+  .segmented label.sel-urgent { background: var(--red-50); border-color: var(--red); color: var(--red-dark); }
+  .switch-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    min-height: 56px; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 12px; cursor: pointer;
+  }
+  .switch-row input { position: absolute; opacity: 0; pointer-events: none; }
+  .switch { flex: none; width: 52px; height: 30px; border-radius: 999px; background: #d1d5db; position: relative; transition: background .15s; }
+  .switch::after {
+    content: ""; position: absolute; top: 3px; right: 3px; width: 24px; height: 24px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: right .15s;
+  }
+  .switch-row input:checked + .switch { background: var(--green); }
+  .switch-row input:checked + .switch::after { right: 25px; }
+  .switch-row input:focus-visible + .switch { outline: 3px solid #86efac; outline-offset: 2px; }
+  .modal-actions { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; margin-top: 18px; }
+  .modal-actions .btn { width: 100%; }
+  .confirm-msg { margin: 0 0 6px; color: #374151; line-height: 1.55; }
+  .confirm-note { margin: 0; font-size: .9rem; color: var(--green-dark); font-weight: 700; }
+
+  /* ========== Toast ========== */
+  .toast {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: calc(var(--bar-h) + 18px + env(safe-area-inset-bottom));
+    z-index: 60; background: #111827; color: #fff; padding: 12px 18px; border-radius: 12px;
+    font-weight: 700; font-size: .95rem; box-shadow: 0 6px 20px rgba(0,0,0,.2);
+    max-width: calc(100% - 32px); width: max-content; text-align: center;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .toast.show { opacity: 1; }
+
+  /* ========== Responsive ========== */
+  @media (min-width: 600px) {
+    .modal-backdrop { align-items: center; padding: 16px; }
+    .modal { border-radius: 20px; padding-bottom: 20px; }
+    .app-title { font-size: 1.5rem; }
+    .bar-btn { flex-direction: row; gap: 8px; font-size: .95rem; }
+    .bar-btn.primary { font-size: 1.1rem; }
+  }
+  @media (min-width: 760px) {
+    .catalog { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    main { padding-left: 16px; padding-right: 16px; }
+    .sticky { padding-left: 16px; padding-right: 16px; }
+    .sticky-inner { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "search stats" "tools tools"; align-items: center; }
+    .search { grid-area: search; }
+    .stats { grid-area: stats; flex-wrap: nowrap; }
+    .catalog-tools, .shop-tools { grid-area: tools; }
+    .shop-tools { flex-direction: row; align-items: center; }
+    .shop-tools .progress-row { flex: 1; }
+    .shop-tools .toolbar .tool-btn { flex: none; }
+  }
+  @media (min-width: 1150px) {
+    .catalog { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (hover: hover) {
+    .cat-toggle:hover, .shop-main:hover, .urg-mini:hover { background: rgba(0,0,0,.025); }
+    .chip:hover, .tool-btn:hover { border-color: #9ca3af; }
+    .product:not(.needed):hover { background: #fafafa; }
+  }
+  /* Landscape phones: save vertical space */
+  @media (orientation: landscape) and (max-height: 520px) {
+    :root { --bar-h: 58px; }
+    .app-header { padding-top: calc(8px + env(safe-area-inset-top)); padding-bottom: 8px; }
+    .app-sub { display: none; }
+    .app-title { font-size: 1.1rem; }
+    .profile-switch { margin-top: 8px; }
+    .profile-btn { min-height: 44px; }
+    .sticky { position: static; }
+    .bar-btn { min-height: 46px; flex-direction: row; gap: 6px; font-size: .9rem; }
+    .bottom-bar { padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
+    .modal { max-height: 96vh; max-height: 96dvh; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-inner">
+    <div>
+      <h1 class="app-title"><span aria-hidden="true">🛒</span> רשימת הקניות שלי</h1>
+      <p class="app-sub" id="appSub">סמנו מה חסר בבית – ובסופר עברו למצב קניות</p>
+    </div>
+    <span class="mode-pill" id="modePill">📋 קטלוג</span>
+  </div>
+  <div class="profile-switch" id="profileSwitch" role="radiogroup" aria-label="בחירת רשימה"></div>
+</header>
+
+<div class="sticky">
+  <div class="sticky-inner">
+    <div class="search" role="search">
+      <span class="search-icon" aria-hidden="true">🔍</span>
+      <label for="searchInput" class="visually-hidden">חיפוש מוצר</label>
+      <input type="search" id="searchInput" placeholder="חיפוש מוצר..." autocomplete="off" enterkeyhint="search">
+      <button type="button" class="search-clear" id="searchClear" aria-label="ניקוי חיפוש">✕</button>
+    </div>
+
+    <div class="stats" aria-live="polite">
+      <span class="stat profile-badge" id="profileBadge" title="הרשימה הפעילה"></span>
+      <span class="stat green" title="מוצרים שנבחרו לקנייה">🛒 לקנייה: <span class="num" id="countNeeded">0</span></span>
+      <span class="stat red" id="statUrgent" title="מוצרים דחופים שעדיין לא נקנו">🔥 דחופים: <span class="num" id="countUrgent">0</span></span>
+      <span class="stats-hint" id="statsHint"></span>
+    </div>
+
+    <div class="toolbar catalog-tools">
+      <div class="chips" id="filterChips" role="tablist" aria-label="סינון מוצרים">
+        <button type="button" class="chip" data-filter="all" role="tab">הכל</button>
+        <button type="button" class="chip" data-filter="needed" role="tab">✅ נבחרו</button>
+        <button type="button" class="chip chip-urgent" data-filter="urgent" role="tab">🔥 דחופים</button>
+        <button type="button" class="chip" data-filter="notNeeded" role="tab">⬜ לא נבחרו</button>
+      </div>
+      <button type="button" class="tool-btn" id="toggleAllBtn">פתח הכל ▾</button>
+    </div>
+
+    <div class="shop-tools">
+      <div class="progress-row">
+        <div class="progress" role="progressbar" aria-label="התקדמות הקנייה" aria-valuemin="0" aria-valuemax="100" id="progressBar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <span class="progress-text" id="progressText">0 / 0 נקנו</span>
+      </div>
+      <div class="toolbar">
+        <button type="button" class="tool-btn" id="hidePurchasedBtn">🙈 הסתר שנקנו</button>
+        <button type="button" class="tool-btn" id="clearPurchasedBtn" title="הסרת המוצרים שנקנו מרשימת הקניות (הם יישארו בקטלוג)">🧺 הסר שנקנו מהרשימה</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main id="view" aria-live="polite"></main>
+
+<nav class="bottom-bar" aria-label="פעולות ראשיות">
+  <div class="bar-inner">
+    <button type="button" class="bar-btn primary" id="modeBtn">
+      <span class="ico" id="modeBtnIcon" aria-hidden="true">🛍️</span>
+      <span id="modeBtnText">מצב קניות</span>
+      <span class="badge" id="modeBtnBadge">0</span>
+    </button>
+    <button type="button" class="bar-btn secondary" id="addBtn">
+      <span class="ico" aria-hidden="true">➕</span><span>הוסף מוצר חדש</span>
+    </button>
+    <button type="button" class="bar-btn danger" id="resetBtn">
+      <span class="ico" aria-hidden="true">🔄</span><span>איפוס רשימת קניות</span>
+    </button>
+  </div>
+</nav>
+
+<!-- Add product modal -->
+<div class="modal-backdrop" id="addModal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addTitle">
+    <div class="modal-head">
+      <h2 id="addTitle">➕ הוסף מוצר חדש</h2>
+      <button type="button" class="modal-close" data-close aria-label="סגירה">✕</button>
+    </div>
+    <form id="addForm" novalidate>
+      <div class="field">
+        <label for="newName">שם המוצר</label>
+        <input type="text" id="newName" maxlength="50" placeholder="לדוגמה: חלב שקדים" autocomplete="off" enterkeyhint="done">
+        <div class="error" id="nameError"></div>
+      </div>
+      <div class="field">
+        <label for="newCategory">קטגוריה</label>
+        <select id="newCategory"></select>
+      </div>
+      <div class="new-cat" id="newCatBox" hidden>
+        <div class="new-cat-row">
+          <div class="field">
+            <label for="newCatName">שם הקטגוריה החדשה</label>
+            <input type="text" id="newCatName" maxlength="30" placeholder="לדוגמה: מוצרים לתינוק" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="newCatIcon">אייקון</label>
+            <select id="newCatIcon"></select>
+          </div>
+        </div>
+        <div class="error" id="catError"></div>
+      </div>
+      <div class="field">
+        <label class="switch-row" for="newNeeded">
+          <span><strong>צריך לקנות עכשיו</strong><br><small style="color:var(--muted)">הוספה לרשימת הקניות הנוכחית</small></span>
+          <input type="checkbox" id="newNeeded" checked>
+          <span class="switch" aria-hidden="true"></span>
+        </label>
+      </div>
+      <div class="field" role="radiogroup" aria-labelledby="urgLabel">
+        <span class="field-label" id="urgLabel">דחיפות</span>
+        <div class="segmented">
+          <label id="lblNormal"><input type="radio" name="urgency" value="normal" checked><span>🕒 לא דחוף</span></label>
+          <label id="lblUrgent"><input type="radio" name="urgency" value="urgent"><span>🔥 דחוף</span></label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn btn-green">💾 שמור מוצר</button>
+        <button type="button" class="btn btn-ghost" data-close>ביטול</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Confirm modal -->
+<div class="modal-backdrop" id="confirmModal" aria-hidden="true">
+  <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMsg">
+    <div class="modal-head">
+      <h2 id="confirmTitle">אישור</h2>
+      <button type="button" class="modal-close" data-close aria-label="סגירה">✕</button>
+    </div>
+    <p class="confirm-msg" id="confirmMsg"></p>
+    <p class="confirm-note" id="confirmNote"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-red" id="confirmOk">אישור</button>
+      <button type="button" class="btn btn-ghost" data-close>ביטול</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ==========================================================
+     Default catalog data
+     ========================================================== */
+  const DEFAULT_CATALOG = [
+    { id: 'produce', name: 'פירות וירקות', icon: '🥬', items: [
+      "עגבניות", "עגבניות שרי", "מלפפונים", "בצל", "בצל סגול", "בצל ירוק", "שום", "תפוחי אדמה", "בטטה", "גזר",
+      "פלפל אדום", "פלפל צהוב", "פלפל ירוק", "פלפל חריף", "חסה", "כרוב", "כרוב סגול", "כרובית", "ברוקולי", "קישואים",
+      "חצילים", "דלעת", "תירס", "פטריות", "סלק", "סלרי", "אבוקדו", "לימון", "ג'ינג'ר", "פטרוזיליה", "כוסברה", "שמיר", "נענע",
+      "תפוחים", "בננות", "תפוזים", "קלמנטינות", "אגסים", "ענבים", "אבטיח", "מלון", "תותים", "אפרסקים", "שזיפים", "מנגו", "קיווי", "אננס", "רימונים"
+    ]},
+    { id: 'dairy', name: 'מוצרי חלב וביצים', icon: '🧀', items: [
+      "חלב 3%", "חלב 1%", "חלב ללא לקטוז", "משקה שקדים", "משקה סויה", "ביצים", "גבינה לבנה 5%", "גבינה לבנה 9%", "קוטג'",
+      "גבינה צהובה פרוסה", "גבינה צהובה מגוררת", "גבינת שמנת", "גבינה בולגרית", "גבינת פטה", "מוצרלה", "פרמזן", "גבינת ריקוטה",
+      "לבנה", "יוגורט", "יוגורט יווני", "יוגורט פירות", "אשל", "מעדן חלב", "פודינג", "שמנת מתוקה", "שמנת חמוצה", "שמנת לבישול",
+      "חמאה", "מרגרינה", "חלב מוקצף לקפה"
+    ]},
+    { id: 'meat', name: 'בשר ודגים', icon: '🥩', items: [
+      "חזה עוף", "שניצל עוף", "שוקיים", "כרעיים", "כנפיים", "פרגיות", "עוף שלם", "כבד עוף", "לבבות עוף", "בשר טחון",
+      "אנטריקוט", "צלי כתף", "בשר לגולאש", "אסאדו", "המבורגרים", "קבב", "נקניקיות", "נקניק", "פסטרמה", "חזה הודו פרוס",
+      "הודו טחון", "סלמון", "אמנון", "דניס", "לברק", "פילה מושט", "פילה בקלה", "טונה טרייה"
+    ]},
+    { id: 'vegan', name: 'טבעוני', icon: '🌱', items: [
+      "טופו", "טמפה", "סייטן", "פתיתי סויה", "בשר טחון צמחי", "המבורגר צמחי", "שניצל צמחי", "נקניקיות טבעוניות",
+      "נאגטס צמחי", "משקה שיבולת שועל", "משקה קוקוס", "משקה אורז", "יוגורט סויה", "יוגורט קוקוס", "גבינה טבעונית",
+      "גבינה טבעונית מגוררת", "חמאה טבעונית", "שמנת צמחית לבישול", "שמנת צמחית להקצפה", "מיונז טבעוני", "שוקולד טבעוני",
+      "גלידה טבעונית", "תחליף ביצה", "שמרי בירה", "חלבון אפונה", "אדממה", "זרעי צ'יה", "זרעי פשתן", "ממרח שקדים", "אגר אגר"
+    ]},
+    { id: 'bakery', name: 'לחם ומאפים', icon: '🍞', items: [
+      "לחם אחיד", "לחם מלא", "לחם שיפון", "לחם כוסמין", "לחם קל", "חלה", "פיתות", "לאפות", "באגט", "לחמניות",
+      "לחמניות המבורגר", "לחמניות נקניקיות", "טורטיות", "קרואסונים", "בורקס", "רוגלך", "עוגה", "עוגיות", "פריכיות",
+      "קרקרים", "מצות", "פירורי לחם", "קרוטונים"
+    ]},
+    { id: 'drinks', name: 'משקאות', icon: '🥤', items: [
+      "מים מינרליים", "מים מוגזים", "סודה", "קולה", "קולה זירו", "ספרייט", "פאנטה", "מיץ תפוזים", "מיץ ענבים", "מיץ תפוחים",
+      "תרכיז פטל", "תרכיז לימונענע", "תה קר", "משקה אנרגיה", "בירה", "יין אדום", "יין לבן", "קפה נמס", "קפה טחון", "פולי קפה",
+      "קפסולות קפה", "תה שקיקים", "תה צמחים", "שוקו", "אבקת שוקו"
+    ]},
+    { id: 'snacks', name: 'חטיפים ומתוקים', icon: '🍫', items: [
+      "במבה", "ביסלי", "תפוצ'יפס", "דוריטוס", "צ'יטוס", "בייגלה", "פופקורן", "שוקולד חלב", "שוקולד מריר", "שוקולד לבן",
+      "חטיף שוקולד", "עוגיות שוקולד צ'יפס", "וופלים", "חטיפי דגנים", "חטיפי חלבון", "מסטיק", "סוכריות", "סוכריות גומי",
+      "אגוזי מלך", "קשיו", "שקדים", "פיסטוקים", "גרעינים", "בוטנים", "פירות יבשים", "תמרים", "חלבה", "מרשמלו"
+    ]},
+    { id: 'frozen', name: 'מזון קפוא', icon: '🧊', items: [
+      "שניצל קפוא", "נאגטס", "צ'יפס קפוא", "אפונה קפואה", "תירס קפוא", "שעועית ירוקה קפואה", "ירקות מוקפאים לוק",
+      "ברוקולי קפוא", "תרד קפוא", "פיצה קפואה", "בורקס קפוא", "מלאווח", "ג'חנון", "בצק עלים", "בצק פיצה", "פירות קפואים",
+      "גלידה", "ארטיקים", "קרטיבים", "כופתאות", "קובה", "דגים קפואים", "המבורגר קפוא", "פילה דג קפוא"
+    ]},
+    { id: 'cleaning', name: 'מוצרי ניקיון', icon: '🧽', items: [
+      "נוזל כלים", "טבליות למדיח", "מלח למדיח", "מבריק למדיח", "אבקת כביסה", "ג'ל כביסה", "מרכך כביסה", "מסיר כתמים",
+      "אקונומיקה", "נוזל לניקוי רצפות", "ספריי לניקוי משטחים", "מנקה חלונות", "מסיר שומנים", "מסיר אבנית", "ג'ל לאסלה",
+      "ספוגים", "סקוטש", "מטליות", "מגבונים לניקוי", "שקיות אשפה", "כפפות גומי", "מטהר אוויר", "פותח סתימות", "סמרטוט רצפה"
+    ]},
+    { id: 'care', name: 'טיפוח והיגיינה', icon: '🧴', items: [
+      "שמפו", "מרכך שיער", "סבון גוף", "סבון ידיים", "משחת שיניים", "מברשות שיניים", "חוט דנטלי", "מי פה", "דאודורנט",
+      "קרם לחות", "קרם ידיים", "קרם הגנה", "סכיני גילוח", "קצף גילוח", "צמר גפן", "מקלוני אוזניים", "תחבושות היגייניות",
+      "טמפונים", "חיתולים", "מגבונים לחים", "פלסטרים", "משכך כאבים", "ג'ל לשיער", "מסיר איפור", "שפתון לחות"
+    ]},
+    { id: 'pantry', name: 'מזווה ומוצרים יבשים', icon: '🍝', items: [
+      "אורז", "אורז בסמטי", "פסטה", "ספגטי", "פתיתים", "קוסקוס", "בורגול", "קינואה", "עדשים", "שעועית יבשה", "חומוס יבש",
+      "קמח לבן", "קמח מלא", "סוכר", "סוכר חום", "מלח", "פלפל שחור", "פפריקה", "כורכום", "כמון", "אבקת מרק",
+      "שמן קנולה", "שמן זית", "חומץ", "רוטב סויה", "קטשופ", "מיונז", "חרדל", "טחינה גולמית", "דבש", "ריבה",
+      "ממרח שוקולד", "חמאת בוטנים", "דגני בוקר", "שיבולת שועל", "גרנולה", "אבקת אפייה", "שמרים", "תמצית וניל", "קקאו", "פודינג אינסטנט"
+    ]},
+    { id: 'canned', name: 'שימורים', icon: '🥫', items: [
+      "טונה בשמן", "טונה במים", "תירס בקופסה", "אפונה וגזר", "זיתים ירוקים", "זיתים שחורים", "מלפפונים חמוצים",
+      "רסק עגבניות", "עגבניות מרוסקות", "רוטב עגבניות", "חומוס מוכן", "גרגרי חומוס", "שעועית אדומה", "שעועית בעגבניות",
+      "פטריות בקופסה", "לבבות דקל", "אננס בקופסה", "אפרסקים בסירופ", "סרדינים", "חלב קוקוס", "חלב מרוכז",
+      "מטבוחה", "סלט חצילים", "סחוג"
+    ]},
+    { id: 'household', name: 'מוצרים נוספים לבית', icon: '🏠', items: [
+      "נייר טואלט", "מגבות נייר", "ממחטות", "מפיות", "נייר אפייה", "נייר כסף", "ניילון נצמד", "שקיות סנדוויץ'",
+      "שקיות הקפאה", "צלחות חד פעמיות", "כוסות חד פעמיות", "סכו״ם חד פעמי", "תבניות אלומיניום", "סוללות", "נורות",
+      "נרות", "גפרורים", "מצית", "אוכל לחתול", "אוכל לכלב", "חול לחתולים", "שקיות לאיסוף צרכי כלב"
+    ]}
+  ];
+
+  const CATEGORY_ICONS = ['📦', '🛒', '🍼', '🐾', '🌿', '🍷', '🧃', '🥜', '🍳', '💊', '🧂', '🎉', '🌶️', '🥗', '🧁', '🔧'];
+  const STORAGE_KEY = 'supermarketShoppingList.v1';
+  const ACTIVE_PROFILE_KEY = STORAGE_KEY + '.activeProfile';
+  const PROFILES = [
+    { id: 'malamed', name: 'משפחת מלמד', icon: '👨‍👩‍👧‍👦' },
+    { id: 'evyatar', name: 'אביתר ותמר', icon: '💑' }
+  ];
+  const NEW_CAT_VALUE = '__new__';
+  const FILTERS = ['all', 'needed', 'urgent', 'notNeeded'];
+
+  /* ==========================================================
+     Profiles – each profile is a fully independent saved list
+     ========================================================== */
+  function profileKey(pid) { return STORAGE_KEY + '.profile.' + pid; }
+  function getProfile(pid) {
+    return PROFILES.find(function (p) { return p.id === pid; }) || PROFILES[0];
+  }
+
+  // A list saved before profiles existed becomes the first profile's list
+  function migrateLegacyStorage() {
+    try {
+      const legacy = localStorage.getItem(STORAGE_KEY);
+      if (legacy === null) return;
+      if (localStorage.getItem(profileKey(PROFILES[0].id)) === null) {
+        localStorage.setItem(profileKey(PROFILES[0].id), legacy);
+      }
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (e) { /* storage unavailable */ }
+  }
+
+  function loadActiveProfileId() {
+    let pid = null;
+    try { pid = localStorage.getItem(ACTIVE_PROFILE_KEY); } catch (e) { /* storage unavailable */ }
+    return getProfile(pid).id;
+  }
+
+  /* ==========================================================
+     State & persistence
+     ========================================================== */
+  function defaultUi() {
+    return { mode: 'catalog', filter: 'all', expanded: {}, hidePurchased: false };
+  }
+
+  function buildDefaultState() {
+    const categories = [];
+    const products = [];
+    DEFAULT_CATALOG.forEach(function (cat) {
+      categories.push({ id: cat.id, name: cat.name, icon: cat.icon, custom: false });
+      cat.items.forEach(function (name, i) {
+        products.push(makeProduct('d-' + cat.id + '-' + i, name, cat.id, false));
+      });
+    });
+    return { version: 1, categories: categories, products: products, ui: defaultUi() };
+  }
+
+  function makeProduct(id, name, catId, custom) {
+    return { id: id, name: name, catId: catId, needed: false, urgent: false, purchased: false, custom: !!custom };
+  }
+
+  function loadState(pid) {
+    let raw = null;
+    try { raw = localStorage.getItem(profileKey(pid)); } catch (e) { /* storage unavailable */ }
+    if (!raw) return buildDefaultState();
+    try {
+      const s = JSON.parse(raw);
+      if (!s || !Array.isArray(s.categories) || !Array.isArray(s.products)) throw new Error('bad data');
+      s.ui = Object.assign(defaultUi(), s.ui || {});
+      if (!s.ui.expanded || typeof s.ui.expanded !== 'object') s.ui.expanded = {};
+      if (FILTERS.indexOf(s.ui.filter) === -1) s.ui.filter = 'all';
+      if (s.ui.mode !== 'shopping') s.ui.mode = 'catalog';
+      // Guarantee every product points to an existing category
+      const catIds = new Set(s.categories.map(function (c) { return c.id; }));
+      s.products.forEach(function (p) {
+        if (!catIds.has(p.catId)) {
+          s.categories.push({ id: p.catId, name: 'שונות', icon: '📦', custom: true });
+          catIds.add(p.catId);
+        }
+        p.needed = !!p.needed; p.urgent = !!p.urgent; p.purchased = !!p.purchased;
+      });
+      mergeNewDefaults(s);
+      return s;
+    } catch (e) {
+      return buildDefaultState();
+    }
+  }
+
+  // Adds built-in categories/products introduced in newer versions to an existing saved catalog
+  function mergeNewDefaults(s) {
+    const productIds = new Set(s.products.map(function (p) { return p.id; }));
+    DEFAULT_CATALOG.forEach(function (cat, idx) {
+      if (!s.categories.some(function (c) { return c.id === cat.id; })) {
+        const prev = idx > 0 ? DEFAULT_CATALOG[idx - 1].id : null;
+        const prevPos = s.categories.findIndex(function (c) { return c.id === prev; });
+        s.categories.splice(prevPos + 1, 0, { id: cat.id, name: cat.name, icon: cat.icon, custom: false });
+      }
+      cat.items.forEach(function (name, i) {
+        const id = 'd-' + cat.id + '-' + i;
+        if (!productIds.has(id)) s.products.push(makeProduct(id, name, cat.id, false));
+      });
+    });
+  }
+
+  let storageWarned = false;
+  function saveState() {
+    try {
+      localStorage.setItem(profileKey(activeProfileId), JSON.stringify(state));
+    } catch (e) {
+      if (!storageWarned) {
+        storageWarned = true;
+        toast('⚠️ לא ניתן לשמור נתונים בדפדפן זה');
+      }
+    }
+  }
+
+  migrateLegacyStorage();
+  let activeProfileId = loadActiveProfileId();
+  let state = loadState(activeProfileId);
+  let searchRaw = '';
+  let searchQuery = '';
+  // Categories closed by the user while a search/filter forces categories open (not persisted)
+  const forcedClosed = new Set();
+
+  /* ==========================================================
+     Helpers
+     ========================================================== */
+  const $ = function (sel) { return document.querySelector(sel); };
+  const els = {
+    view: $('#view'),
+    search: $('#searchInput'),
+    searchClear: $('#searchClear'),
+    countNeeded: $('#countNeeded'),
+    countUrgent: $('#countUrgent'),
+    statUrgent: $('#statUrgent'),
+    statsHint: $('#statsHint'),
+    chips: $('#filterChips'),
+    toggleAll: $('#toggleAllBtn'),
+    profileSwitch: $('#profileSwitch'),
+    profileBadge: $('#profileBadge'),
+    progressBar: $('#progressBar'),
+    progressFill: $('#progressFill'),
+    progressText: $('#progressText'),
+    hidePurchased: $('#hidePurchasedBtn'),
+    clearPurchased: $('#clearPurchasedBtn'),
+    modeBtn: $('#modeBtn'),
+    modeBtnIcon: $('#modeBtnIcon'),
+    modeBtnText: $('#modeBtnText'),
+    modeBtnBadge: $('#modeBtnBadge'),
+    modePill: $('#modePill'),
+    appSub: $('#appSub'),
+    addBtn: $('#addBtn'),
+    resetBtn: $('#resetBtn'),
+    addModal: $('#addModal'),
+    addForm: $('#addForm'),
+    newName: $('#newName'),
+    nameError: $('#nameError'),
+    newCategory: $('#newCategory'),
+    newCatBox: $('#newCatBox'),
+    newCatName: $('#newCatName'),
+    newCatIcon: $('#newCatIcon'),
+    catError: $('#catError'),
+    newNeeded: $('#newNeeded'),
+    lblNormal: $('#lblNormal'),
+    lblUrgent: $('#lblUrgent'),
+    confirmModal: $('#confirmModal'),
+    confirmTitle: $('#confirmTitle'),
+    confirmMsg: $('#confirmMsg'),
+    confirmNote: $('#confirmNote'),
+    confirmOk: $('#confirmOk'),
+    toast: $('#toast')
+  };
+
+  function esc(str) {
+    return String(str).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // Lowercase, collapse spaces and ignore quote/geresh variants (צ'יפס == ציפס)
+  function normalize(str) {
+    return String(str).toLowerCase().replace(/['"`׳״]/g, '').replace(/\s+/g, ' ').trim();
+  }
+
+  function highlight(name) {
+    if (!searchRaw) return esc(name);
+    const q = searchRaw.trim().toLowerCase();
+    const idx = q ? name.toLowerCase().indexOf(q) : -1;
+    if (idx === -1) return esc(name);
+    return esc(name.slice(0, idx)) + '<mark>' + esc(name.slice(idx, idx + q.length)) + '</mark>' + esc(name.slice(idx + q.length));
+  }
+
+  const collator = new Intl.Collator('he');
+  function byName(a, b) { return collator.compare(a.name, b.name); }
+
+  function getCategory(id) {
+    return state.categories.find(function (c) { return c.id === id; });
+  }
+  function getProduct(id) {
+    return state.products.find(function (p) { return p.id === id; });
+  }
+  function categoryOrder() {
+    const order = {};
+    state.categories.forEach(function (c, i) { order[c.id] = i; });
+    return order;
+  }
+
+  function matchesSearch(p) {
+    return !searchQuery || normalize(p.name).indexOf(searchQuery) !== -1;
+  }
+  function passesFilter(p) {
+    switch (state.ui.filter) {
+      case 'needed': return p.needed;
+      case 'urgent': return p.needed && p.urgent;
+      case 'notNeeded': return !p.needed;
+      default: return true;
+    }
+  }
+  function isForced() { return !!searchQuery || state.ui.filter !== 'all'; }
+  function isOpen(catId) {
+    return isForced() ? !forcedClosed.has(catId) : !!state.ui.expanded[catId];
+  }
+
+  function uid(prefix) {
+    return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  let toastTimer = null;
+  function toast(msg) {
+    els.toast.textContent = msg;
+    els.toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { els.toast.classList.remove('show'); }, 2600);
+  }
+
+  /* ==========================================================
+     Rendering
+     ========================================================== */
+  function render() {
+    const shopping = state.ui.mode === 'shopping';
+    document.body.classList.toggle('is-shopping', shopping);
+    renderProfiles();
+    renderStats();
+    renderModeUi();
+    if (shopping) renderShopping(); else renderCatalog();
+  }
+
+  function remainingCount(s) {
+    return s.products.filter(function (p) { return p.needed && !p.purchased; }).length;
+  }
+
+  function renderProfiles() {
+    const active = getProfile(activeProfileId);
+    document.body.dataset.profile = active.id;
+    document.title = 'רשימת קניות – ' + active.name;
+    els.profileBadge.textContent = active.icon + ' ' + active.name;
+
+    els.profileSwitch.innerHTML = PROFILES.map(function (p) {
+      const isActive = p.id === activeProfileId;
+      const count = remainingCount(isActive ? state : loadState(p.id));
+      return '<button type="button" class="profile-btn" role="radio" data-profile="' + p.id + '"' +
+        ' aria-checked="' + isActive + '" tabindex="' + (isActive ? '0' : '-1') + '"' +
+        ' aria-label="' + esc(p.name) + ' – ' + count + ' מוצרים לקנייה">' +
+        '<span class="p-ico" aria-hidden="true">' + p.icon + '</span>' +
+        '<span>' + esc(p.name) + '</span>' +
+        '<span class="p-count" aria-hidden="true">' + count + '</span>' +
+      '</button>';
+    }).join('');
+  }
+
+  function switchProfile(pid) {
+    pid = getProfile(pid).id;
+    if (pid === activeProfileId) return;
+    saveState();
+    activeProfileId = pid;
+    try { localStorage.setItem(ACTIVE_PROFILE_KEY, pid); } catch (e) { /* storage unavailable */ }
+    state = loadState(pid);
+    saveState();
+    lastCategoryUsed = null;
+    els.search.value = '';
+    searchRaw = ''; searchQuery = '';
+    els.searchClear.classList.remove('show');
+    forcedClosed.clear();
+    render();
+    window.scrollTo(0, 0);
+    toast(getProfile(pid).icon + ' עברתם לרשימה של ' + getProfile(pid).name);
+  }
+
+  function renderStats() {
+    let needed = 0, urgent = 0, purchased = 0;
+    state.products.forEach(function (p) {
+      if (!p.needed) return;
+      needed++;
+      if (p.purchased) purchased++;
+      else if (p.urgent) urgent++;
+    });
+    els.countNeeded.textContent = needed;
+    els.countUrgent.textContent = urgent;
+    els.statUrgent.classList.toggle('zero', urgent === 0);
+    els.statsHint.textContent = needed === 0 ? 'לא נבחרו מוצרים לקנייה' : '';
+    els.modeBtnBadge.textContent = needed - purchased;
+
+    const pct = needed ? Math.round((purchased / needed) * 100) : 0;
+    els.progressFill.style.width = pct + '%';
+    els.progressBar.setAttribute('aria-valuenow', pct);
+    els.progressText.textContent = purchased + ' / ' + needed + ' נקנו';
+    els.clearPurchased.disabled = purchased === 0;
+  }
+
+  function renderModeUi() {
+    const shopping = state.ui.mode === 'shopping';
+    els.modeBtnIcon.textContent = shopping ? '📋' : '🛍️';
+    els.modeBtnText.textContent = shopping ? 'חזרה לקטלוג' : 'מצב קניות';
+    els.modeBtnBadge.hidden = shopping;
+    els.modePill.textContent = shopping ? '🛍️ מצב קניות' : '📋 קטלוג';
+    els.appSub.textContent = shopping
+      ? 'הקישו על מוצר כדי לסמן שנקנה'
+      : 'סמנו מה חסר בבית – ובסופר עברו למצב קניות';
+    els.search.placeholder = shopping ? 'חיפוש ברשימת הקניות...' : 'חיפוש מוצר...';
+
+    Array.prototype.forEach.call(els.chips.querySelectorAll('.chip'), function (chip) {
+      const active = chip.dataset.filter === state.ui.filter;
+      chip.classList.toggle('active', active);
+      chip.setAttribute('aria-selected', active);
+    });
+
+    els.hidePurchased.classList.toggle('active', state.ui.hidePurchased);
+    els.hidePurchased.textContent = state.ui.hidePurchased ? '👁️ הצג שנקנו' : '🙈 הסתר שנקנו';
+  }
+
+  /* ---------- Catalog view ---------- */
+  function renderCatalog() {
+    const forced = isForced();
+    const parts = [];
+    const visibleCatIds = [];
+
+    state.categories.forEach(function (cat) {
+      const all = state.products.filter(function (p) { return p.catId === cat.id; });
+      const visible = all.filter(function (p) { return matchesSearch(p) && passesFilter(p); }).sort(byName);
+      if (forced && visible.length === 0) return;
+      visibleCatIds.push(cat.id);
+
+      const neededN = all.filter(function (p) { return p.needed; }).length;
+      const urgentN = all.filter(function (p) { return p.needed && p.urgent; }).length;
+      const open = isOpen(cat.id);
+      const canDelete = cat.custom && all.length === 0;
+
+      let body = '';
+      if (open) {
+        body = visible.length
+          ? '<ul class="product-list">' + visible.map(productHtml).join('') + '</ul>'
+          : '<p class="cat-empty">אין עדיין מוצרים בקטגוריה זו.</p>';
+      }
+
+      parts.push(
+        '<section class="category' + (open ? ' open' : '') + '" data-cat="' + esc(cat.id) + '">' +
+          '<div class="cat-head">' +
+            '<button type="button" class="cat-toggle" data-action="toggle-cat" data-id="' + esc(cat.id) + '" aria-expanded="' + open + '">' +
+              '<span class="cat-icon" aria-hidden="true">' + esc(cat.icon) + '</span>' +
+              '<span class="cat-name">' + esc(cat.name) + '</span>' +
+              '<span class="cat-badges">' +
+                (urgentN ? '<span class="cat-count urgent" title="דחופים">🔥 ' + urgentN + '</span>' : '') +
+                '<span class="cat-count' + (neededN ? ' has' : '') + '" title="נבחרו מתוך סה״כ">' + neededN + '/' + all.length + '</span>' +
+              '</span>' +
+              '<span class="chev" aria-hidden="true">▾</span>' +
+            '</button>' +
+            (canDelete ? '<button type="button" class="cat-del" data-action="delete-cat" data-id="' + esc(cat.id) + '" aria-label="מחיקת הקטגוריה ' + esc(cat.name) + '" title="מחיקת קטגוריה ריקה">🗑️</button>' : '') +
+          '</div>' +
+          body +
+        '</section>'
+      );
+    });
+
+    if (!parts.length) {
+      els.view.innerHTML = catalogEmptyHtml();
+    } else {
+      els.view.innerHTML = '<div class="catalog">' + parts.join('') + '</div>';
+    }
+
+    // Expand/collapse-all button reflects visible categories
+    const anyClosed = visibleCatIds.some(function (id) { return !isOpen(id); });
+    els.toggleAll.disabled = visibleCatIds.length === 0;
+    els.toggleAll.textContent = anyClosed ? 'פתח הכל ▾' : 'סגור הכל ▴';
+    els.toggleAll.dataset.open = anyClosed ? '1' : '0';
+  }
+
+  function productHtml(p) {
+    const cls = ['product'];
+    if (p.needed) cls.push('needed');
+    if (p.needed && p.urgent) cls.push('urgent');
+    const id = esc(p.id);
+    let html = '<li class="' + cls.join(' ') + '" data-pid="' + id + '">' +
+      '<label class="check">' +
+        '<input type="checkbox" data-action="need" data-id="' + id + '"' + (p.needed ? ' checked' : '') + '>' +
+        '<span class="box" aria-hidden="true"></span>' +
+        '<span class="pname">' + highlight(p.name) + (p.custom ? '<span class="tag-custom">שלי</span>' : '') + '</span>' +
+      '</label>';
+    if (p.needed) {
+      html += '<button type="button" class="urg-btn ' + (p.urgent ? 'is-urgent' : 'not-urgent') + '" data-action="urgent" data-id="' + id + '"' +
+        ' aria-pressed="' + p.urgent + '" title="הקישו לשינוי דחיפות">' + (p.urgent ? '🔥 דחוף' : '🕒 לא דחוף') + '</button>';
+    }
+    if (p.custom) {
+      html += '<button type="button" class="del-btn" data-action="delete" data-id="' + id + '" aria-label="מחיקת ' + esc(p.name) + ' מהקטלוג" title="מחיקה מהקטלוג">🗑️</button>';
+    }
+    return html + '</li>';
+  }
+
+  function catalogEmptyHtml() {
+    if (searchQuery) {
+      return '<div class="empty"><div class="big">🔍</div>' +
+        '<h2>לא נמצאו מוצרים עבור "' + esc(searchRaw.trim()) + '"</h2>' +
+        '<p>אפשר להוסיף אותו כמוצר חדש לקטלוג.</p>' +
+        '<button type="button" class="btn btn-green" data-action="add-from-search">➕ הוסף את "' + esc(searchRaw.trim()) + '"</button></div>';
+    }
+    if (state.ui.filter === 'needed' || state.ui.filter === 'urgent') {
+      const urgent = state.ui.filter === 'urgent';
+      return '<div class="empty"><div class="big">' + (urgent ? '👍' : '📝') + '</div>' +
+        '<h2>' + (urgent ? 'אין מוצרים דחופים' : 'לא נבחרו מוצרים לקנייה') + '</h2>' +
+        '<p>' + (urgent ? 'סמנו מוצר כ"דחוף" כדי שיופיע כאן.' : 'סמנו מוצרים בקטלוג כדי להוסיף אותם לרשימת הקניות.') + '</p>' +
+        '<button type="button" class="btn btn-light" data-action="filter-all">📋 הצג את כל הקטלוג</button></div>';
+    }
+    return '<div class="empty"><div class="big">🎉</div><h2>כל המוצרים כבר ברשימת הקניות</h2>' +
+      '<button type="button" class="btn btn-light" data-action="filter-all">📋 הצג את כל הקטלוג</button></div>';
+  }
+
+  /* ---------- Shopping view ---------- */
+  function renderShopping() {
+    const needed = state.products.filter(function (p) { return p.needed; });
+    if (!needed.length) {
+      els.view.innerHTML = '<div class="shopping"><div class="empty"><div class="big">🛒</div>' +
+        '<h2>רשימת הקניות ריקה</h2>' +
+        '<p>אין כרגע מוצרים שנבחרו לקנייה. חזרו לקטלוג וסמנו את המוצרים שחסרים לכם.</p>' +
+        '<button type="button" class="btn btn-green" data-action="go-catalog">📋 מעבר לקטלוג</button></div></div>';
+      return;
+    }
+
+    const allPurchased = needed.every(function (p) { return p.purchased; });
+    let list = needed.filter(matchesSearch);
+    if (state.ui.hidePurchased) list = list.filter(function (p) { return !p.purchased; });
+
+    let html = '<div class="shopping">';
+    if (allPurchased) {
+      html += '<div class="done-banner">🎉 כל הכבוד! כל המוצרים ברשימה נקנו.<br>' +
+        '<button type="button" class="btn btn-green" style="margin-top:10px" data-action="clear-purchased">🧺 סיום – נקה את הרשימה</button></div>';
+    }
+
+    if (!list.length) {
+      if (searchQuery) {
+        html += '<div class="empty"><div class="big">🔍</div><h2>אין ברשימה מוצר בשם "' + esc(searchRaw.trim()) + '"</h2>' +
+          '<p>המוצר אינו מסומן לקנייה או שלא קיים בקטלוג.</p></div>';
+      } else if (!allPurchased) {
+        html += '<div class="empty"><div class="big">✅</div><h2>כל המוצרים המוצגים נקנו</h2></div>';
+      }
+      els.view.innerHTML = html + '</div>';
+      return;
+    }
+
+    const order = categoryOrder();
+    const sortShop = function (a, b) {
+      if (a.purchased !== b.purchased) return a.purchased ? 1 : -1;
+      return byName(a, b);
+    };
+
+    const urgent = list.filter(function (p) { return p.urgent; }).sort(function (a, b) {
+      if (a.purchased !== b.purchased) return a.purchased ? 1 : -1;
+      if (order[a.catId] !== order[b.catId]) return order[a.catId] - order[b.catId];
+      return byName(a, b);
+    });
+    const regular = list.filter(function (p) { return !p.urgent; });
+
+    if (urgent.length) {
+      const left = urgent.filter(function (p) { return !p.purchased; }).length;
+      html += '<section class="shop-section">' +
+        '<h2 class="shop-title urgent">🔥 דחוף <span class="cnt">' + left + ' נותרו</span></h2>' +
+        '<div class="shop-group urgent-group">' + urgent.map(function (p) { return shopItemHtml(p, true); }).join('') + '</div>' +
+        '</section>';
+    }
+
+    if (regular.length) {
+      const left = regular.filter(function (p) { return !p.purchased; }).length;
+      html += '<section class="shop-section">' +
+        '<h2 class="shop-title">🛒 לא דחוף <span class="cnt">' + left + ' נותרו</span></h2>';
+      state.categories.forEach(function (cat) {
+        const items = regular.filter(function (p) { return p.catId === cat.id; }).sort(sortShop);
+        if (!items.length) return;
+        html += '<div class="shop-group">' +
+          '<div class="shop-group-head"><span aria-hidden="true">' + esc(cat.icon) + '</span>' + esc(cat.name) + '</div>' +
+          items.map(function (p) { return shopItemHtml(p, false); }).join('') +
+          '</div>';
+      });
+      html += '</section>';
+    }
+
+    els.view.innerHTML = html + '</div>';
+  }
+
+  function shopItemHtml(p, showCategory) {
+    const id = esc(p.id);
+    const cat = getCategory(p.catId);
+    let meta = '';
+    if (p.purchased) meta = '✓ נקנה';
+    else if (showCategory && cat) meta = cat.icon + ' ' + cat.name;
+    return '<div class="shop-item' + (p.urgent ? ' urgent' : '') + (p.purchased ? ' purchased' : '') + '">' +
+      '<button type="button" class="shop-main" data-action="purchased" data-id="' + id + '" aria-pressed="' + p.purchased + '"' +
+        ' aria-label="' + esc(p.name) + (p.purchased ? ' – נקנה. הקישו לביטול' : ' – הקישו לסימון שנקנה') + '">' +
+        '<span class="circle" aria-hidden="true">' + (p.purchased ? '✓' : '') + '</span>' +
+        '<span class="shop-text"><span class="shop-name">' + highlight(p.name) + '</span>' +
+          (meta ? '<span class="shop-meta">' + esc(meta) + '</span>' : '') + '</span>' +
+      '</button>' +
+      '<button type="button" class="urg-mini' + (p.urgent ? ' is-urgent' : '') + '" data-action="urgent" data-id="' + id + '"' +
+        ' aria-pressed="' + p.urgent + '" title="שינוי דחיפות">' +
+        (p.urgent ? '🔥<span>דחוף</span>' : '🕒<span>לא דחוף</span>') +
+      '</button>' +
+    '</div>';
+  }
+
+  /* ==========================================================
+     Actions
+     ========================================================== */
+  function commit() { saveState(); render(); }
+
+  function setNeeded(id, needed) {
+    const p = getProduct(id);
+    if (!p) return;
+    p.needed = needed;
+    if (!needed) { p.urgent = false; p.purchased = false; }
+    commit();
+  }
+
+  function toggleUrgent(id) {
+    const p = getProduct(id);
+    if (!p) return;
+    p.urgent = !p.urgent;
+    if (p.urgent) p.needed = true;
+    commit();
+    toast(p.urgent ? '🔥 "' + p.name + '" סומן כדחוף' : '🕒 "' + p.name + '" סומן כלא דחוף');
+  }
+
+  function togglePurchased(id) {
+    const p = getProduct(id);
+    if (!p) return;
+    p.purchased = !p.purchased;
+    commit();
+  }
+
+  function toggleCategory(id) {
+    if (isForced()) {
+      if (forcedClosed.has(id)) forcedClosed.delete(id); else forcedClosed.add(id);
+    } else {
+      if (state.ui.expanded[id]) delete state.ui.expanded[id]; else state.ui.expanded[id] = true;
+      saveState();
+    }
+    render();
+  }
+
+  function setAllOpen(open) {
+    if (isForced()) {
+      forcedClosed.clear();
+      if (!open) state.categories.forEach(function (c) { forcedClosed.add(c.id); });
+    } else {
+      state.ui.expanded = {};
+      if (open) state.categories.forEach(function (c) { state.ui.expanded[c.id] = true; });
+      saveState();
+    }
+    render();
+  }
+
+  function setFilter(f) {
+    if (FILTERS.indexOf(f) === -1) return;
+    state.ui.filter = f;
+    forcedClosed.clear();
+    commit();
+  }
+
+  function setMode(mode) {
+    state.ui.mode = mode;
+    commit();
+    window.scrollTo(0, 0);
+  }
+
+  function setSearch(value) {
+    searchRaw = value;
+    searchQuery = normalize(value);
+    forcedClosed.clear();
+    els.searchClear.classList.toggle('show', value.length > 0);
+    render();
+  }
+
+  function resetList() {
+    const any = state.products.some(function (p) { return p.needed || p.urgent || p.purchased; });
+    if (!any) { toast('רשימת הקניות כבר ריקה'); return; }
+    const profileName = getProfile(activeProfileId).name;
+    openConfirm({
+      title: '🔄 איפוס רשימת הקניות',
+      message: 'האם לאפס את רשימת הקניות של "' + profileName + '"? כל סימוני הקנייה וסימוני הדחיפות ברשימה זו יימחקו.',
+      note: '✔️ כל המוצרים בקטלוג, כולל מוצרים וקטגוריות שהוספתם, יישמרו. הרשימה השנייה לא תושפע.',
+      okText: 'כן, אפס רשימה',
+      onOk: function () {
+        state.products.forEach(function (p) { p.needed = false; p.urgent = false; p.purchased = false; });
+        commit();
+        toast('✅ רשימת "' + profileName + '" אופסה – הקטלוג נשמר');
+      }
+    });
+  }
+
+  function clearPurchased() {
+    let n = 0;
+    state.products.forEach(function (p) {
+      if (p.needed && p.purchased) { p.needed = false; p.urgent = false; p.purchased = false; n++; }
+    });
+    if (!n) return;
+    commit();
+    toast('🧺 ' + n + ' מוצרים שנקנו הוסרו מהרשימה');
+  }
+
+  function deleteProduct(id) {
+    const p = getProduct(id);
+    if (!p || !p.custom) return;
+    openConfirm({
+      title: '🗑️ מחיקת מוצר',
+      message: 'למחוק את "' + p.name + '" מהקטלוג לצמיתות?',
+      note: '',
+      okText: 'כן, מחק',
+      onOk: function () {
+        state.products = state.products.filter(function (x) { return x.id !== id; });
+        commit();
+        toast('המוצר נמחק מהקטלוג');
+      }
+    });
+  }
+
+  function deleteCategory(id) {
+    const cat = getCategory(id);
+    if (!cat || !cat.custom) return;
+    if (state.products.some(function (p) { return p.catId === id; })) return;
+    openConfirm({
+      title: '🗑️ מחיקת קטגוריה',
+      message: 'למחוק את הקטגוריה הריקה "' + cat.name + '"?',
+      note: '',
+      okText: 'כן, מחק',
+      onOk: function () {
+        state.categories = state.categories.filter(function (c) { return c.id !== id; });
+        delete state.ui.expanded[id];
+        commit();
+        toast('הקטגוריה נמחקה');
+      }
+    });
+  }
+
+  /* ==========================================================
+     Modals
+     ========================================================== */
+  let lastFocus = null;
+  let confirmHandler = null;
+
+  function openModal(modal, focusEl) {
+    lastFocus = document.activeElement;
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+    if (focusEl) setTimeout(function () { focusEl.focus(); }, 30);
+  }
+
+  function closeModal(modal) {
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    if (!document.querySelector('.modal-backdrop.open')) document.body.classList.remove('modal-open');
+    if (lastFocus && document.body.contains(lastFocus)) lastFocus.focus({ preventScroll: true });
+  }
+
+  function openConfirm(opts) {
+    els.confirmTitle.textContent = opts.title;
+    els.confirmMsg.textContent = opts.message;
+    els.confirmNote.textContent = opts.note || '';
+    els.confirmNote.hidden = !opts.note;
+    els.confirmOk.textContent = opts.okText || 'אישור';
+    confirmHandler = opts.onOk;
+    openModal(els.confirmModal, els.confirmOk);
+  }
+
+  function updateUrgencyUi() {
+    const urgent = els.addForm.elements.urgency.value === 'urgent';
+    els.lblNormal.classList.toggle('sel-normal', !urgent);
+    els.lblUrgent.classList.toggle('sel-urgent', urgent);
+  }
+
+  function updateNewCatUi() {
+    const isNew = els.newCategory.value === NEW_CAT_VALUE;
+    els.newCatBox.hidden = !isNew;
+    if (!isNew) els.catError.textContent = '';
+  }
+
+  function openAddModal(prefillName) {
+    els.addForm.reset();
+    els.nameError.textContent = '';
+    els.catError.textContent = '';
+    els.newName.value = prefillName || '';
+
+    els.newCategory.innerHTML = state.categories.map(function (c) {
+      return '<option value="' + esc(c.id) + '">' + esc(c.icon + ' ' + c.name) + '</option>';
+    }).join('') + '<option value="' + NEW_CAT_VALUE + '">➕ קטגוריה חדשה...</option>';
+    if (lastCategoryUsed && getCategory(lastCategoryUsed)) els.newCategory.value = lastCategoryUsed;
+
+    els.newCatIcon.innerHTML = CATEGORY_ICONS.map(function (i) {
+      return '<option value="' + i + '">' + i + '</option>';
+    }).join('');
+
+    els.newNeeded.checked = true;
+    updateUrgencyUi();
+    updateNewCatUi();
+    openModal(els.addModal, els.newName);
+  }
+
+  let lastCategoryUsed = null;
+
+  function submitAddForm(e) {
+    e.preventDefault();
+    els.nameError.textContent = '';
+    els.catError.textContent = '';
+
+    const name = els.newName.value.trim().replace(/\s+/g, ' ');
+    if (!name) {
+      els.nameError.textContent = 'נא להזין שם מוצר';
+      els.newName.focus();
+      return;
+    }
+
+    let catId = els.newCategory.value;
+    let newCat = null;
+    if (catId === NEW_CAT_VALUE) {
+      const catName = els.newCatName.value.trim().replace(/\s+/g, ' ');
+      if (!catName) {
+        els.catError.textContent = 'נא להזין שם לקטגוריה החדשה';
+        els.newCatName.focus();
+        return;
+      }
+      const existing = state.categories.find(function (c) { return normalize(c.name) === normalize(catName); });
+      if (existing) {
+        catId = existing.id;
+      } else {
+        newCat = { id: uid('c-'), name: catName, icon: els.newCatIcon.value || '📦', custom: true };
+        catId = newCat.id;
+      }
+    }
+
+    const dup = state.products.find(function (p) { return p.catId === catId && normalize(p.name) === normalize(name); });
+    if (dup) {
+      els.nameError.textContent = 'מוצר בשם זה כבר קיים בקטגוריה';
+      els.newName.focus();
+      return;
+    }
+
+    if (newCat) state.categories.push(newCat);
+    const urgent = els.addForm.elements.urgency.value === 'urgent';
+    const product = makeProduct(uid('u-'), name, catId, true);
+    product.needed = els.newNeeded.checked || urgent;
+    product.urgent = product.needed && urgent;
+    state.products.push(product);
+    lastCategoryUsed = catId;
+
+    // Make the new product visible in the catalog
+    state.ui.expanded[catId] = true;
+    if (state.ui.mode === 'catalog') {
+      state.ui.filter = 'all';
+      els.search.value = '';
+      searchRaw = ''; searchQuery = '';
+      els.searchClear.classList.remove('show');
+      forcedClosed.clear();
+    }
+    saveState();
+    closeModal(els.addModal);
+    render();
+    toast('✅ "' + name + '" נוסף לקטלוג' + (product.needed ? ' ולרשימת הקניות' : ''));
+
+    if (state.ui.mode === 'catalog') {
+      const li = els.view.querySelector('[data-pid="' + CSS.escape(product.id) + '"]');
+      if (li) {
+        li.scrollIntoView({ block: 'center' });
+        li.classList.add('flash');
+        setTimeout(function () { li.classList.remove('flash'); }, 1400);
+      }
+    }
+  }
+
+  /* ==========================================================
+     Event wiring
+     ========================================================== */
+  function restoreFocus(action, id) {
+    const el = els.view.querySelector('[data-action="' + action + '"][data-id="' + CSS.escape(id) + '"]');
+    if (el) el.focus({ preventScroll: true });
+  }
+
+  els.view.addEventListener('change', function (e) {
+    const t = e.target;
+    if (t.matches('input[data-action="need"]')) {
+      const id = t.dataset.id;
+      setNeeded(id, t.checked);
+      restoreFocus('need', id);
+    }
+  });
+
+  els.view.addEventListener('click', function (e) {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const id = btn.dataset.id;
+    const hadFocus = document.activeElement === btn;
+    switch (action) {
+      case 'toggle-cat': toggleCategory(id); break;
+      case 'urgent': toggleUrgent(id); break;
+      case 'purchased': togglePurchased(id); break;
+      case 'delete': deleteProduct(id); return;
+      case 'delete-cat': deleteCategory(id); return;
+      case 'go-catalog': setMode('catalog'); return;
+      case 'filter-all': setFilter('all'); return;
+      case 'clear-purchased': clearPurchased(); return;
+      case 'add-from-search': openAddModal(searchRaw.trim()); return;
+      default: return;
+    }
+    if (hadFocus && id) restoreFocus(action, id);
+  });
+
+  els.chips.addEventListener('click', function (e) {
+    const chip = e.target.closest('.chip');
+    if (chip) setFilter(chip.dataset.filter);
+  });
+
+  els.toggleAll.addEventListener('click', function () {
+    setAllOpen(els.toggleAll.dataset.open === '1');
+  });
+
+  els.search.addEventListener('input', function () { setSearch(els.search.value); });
+  els.search.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { els.search.value = ''; setSearch(''); }
+    if (e.key === 'Enter') els.search.blur(); // hide mobile keyboard
+  });
+  els.searchClear.addEventListener('click', function () {
+    els.search.value = '';
+    setSearch('');
+    els.search.focus();
+  });
+
+  els.modeBtn.addEventListener('click', function () {
+    setMode(state.ui.mode === 'shopping' ? 'catalog' : 'shopping');
+  });
+  els.addBtn.addEventListener('click', function () { openAddModal(''); });
+  els.resetBtn.addEventListener('click', resetList);
+  els.hidePurchased.addEventListener('click', function () {
+    state.ui.hidePurchased = !state.ui.hidePurchased;
+    commit();
+  });
+  els.clearPurchased.addEventListener('click', clearPurchased);
+
+  // Add form
+  els.addForm.addEventListener('submit', submitAddForm);
+  els.newCategory.addEventListener('change', function () {
+    updateNewCatUi();
+    if (els.newCategory.value === NEW_CAT_VALUE) els.newCatName.focus();
+  });
+  Array.prototype.forEach.call(els.addForm.elements.urgency, function (r) {
+    r.addEventListener('change', function () {
+      if (r.value === 'urgent' && r.checked) els.newNeeded.checked = true;
+      updateUrgencyUi();
+    });
+  });
+  els.newNeeded.addEventListener('change', function () {
+    if (!els.newNeeded.checked) {
+      els.addForm.elements.urgency.value = 'normal';
+      updateUrgencyUi();
+    }
+  });
+  els.newName.addEventListener('input', function () { els.nameError.textContent = ''; });
+  els.newCatName.addEventListener('input', function () { els.catError.textContent = ''; });
+
+  // Confirm modal
+  els.confirmOk.addEventListener('click', function () {
+    const fn = confirmHandler;
+    confirmHandler = null;
+    closeModal(els.confirmModal);
+    if (fn) fn();
+  });
+
+  // Generic modal close: X / cancel buttons, backdrop click, Escape
+  document.querySelectorAll('.modal-backdrop').forEach(function (modal) {
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal || e.target.closest('[data-close]')) closeModal(modal);
+    });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    const open = document.querySelector('.modal-backdrop.open');
+    if (open) closeModal(open);
+  });
+
+  // Keep multiple open tabs in sync
+  window.addEventListener('storage', function (e) {
+    if (e.key === profileKey(activeProfileId)) { state = loadState(activeProfileId); render(); }
+    else if (e.key && e.key.indexOf(STORAGE_KEY + '.profile.') === 0) renderProfiles();
+  });
+
+  els.profileSwitch.addEventListener('click', function (e) {
+    const btn = e.target.closest('.profile-btn');
+    if (btn) switchProfile(btn.dataset.profile);
+  });
+  // Arrow keys move between profiles (radiogroup pattern)
+  els.profileSwitch.addEventListener('keydown', function (e) {
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(e.key) === -1) return;
+    e.preventDefault();
+    const idx = PROFILES.findIndex(function (p) { return p.id === activeProfileId; });
+    const next = PROFILES[(idx + 1) % PROFILES.length].id;
+    switchProfile(next);
+    const btn = els.profileSwitch.querySelector('[data-profile="' + next + '"]');
+    if (btn) btn.focus();
+  });
+
+  /* ==========================================================
+     Init
+     ========================================================== */
+  saveState();
+  render();
+})();
+</script>
+</body>
+</html>
