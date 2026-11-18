@@ -70,15 +70,41 @@
   .app-header { background: var(--profile-grad); }
   .profile-switch {
     max-width: 1200px; margin: 12px auto 0;
-    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+    display: flex; align-items: stretch; gap: 6px;
     background: rgba(0,0,0,.2); padding: 5px; border-radius: 16px;
   }
+  .profile-list { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 6px; }
   .profile-btn {
+    flex: 1 1 120px;
     min-height: 52px; border: 0; border-radius: 12px; background: transparent; color: #fff;
     font-weight: 800; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 6px;
     padding: 4px 6px; line-height: 1.15; white-space: nowrap; min-width: 0;
   }
   .profile-btn .p-ico { font-size: 1.2rem; }
+  .profile-btn .p-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .profile-add {
+    flex: none; min-width: 52px; min-height: 52px; border: 1.5px dashed rgba(255,255,255,.6); border-radius: 12px;
+    background: rgba(255,255,255,.12); color: #fff; font-weight: 800; font-size: .95rem;
+    display: flex; align-items: center; justify-content: center; gap: 6px; padding: 4px 10px; white-space: nowrap;
+  }
+  .profile-add .pa-ico { font-size: 1.15rem; }
+  .profile-add:hover { background: rgba(255,255,255,.22); }
+  .profile-add:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  @media (max-width: 599px) {
+    .profile-switch { flex-wrap: wrap; }
+    .profile-list { flex: 1 1 100%; }
+    .profile-btn { flex-basis: 140px; }
+    .profile-add { flex: 1 1 100%; min-height: 40px; font-size: .9rem; }
+  }
+  .icon-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+  .icon-picker label { position: relative; }
+  .icon-picker input { position: absolute; opacity: 0; pointer-events: none; }
+  .icon-picker span {
+    display: grid; place-items: center; width: 46px; height: 46px; font-size: 1.4rem; cursor: pointer;
+    border: 1.5px solid var(--border); border-radius: 12px; background: #fff;
+  }
+  .icon-picker input:checked + span { border-color: var(--green); background: var(--green-50); box-shadow: 0 0 0 2px var(--green-200); }
+  .icon-picker input:focus-visible + span { outline: 3px solid #86efac; outline-offset: 2px; }
   .profile-btn .p-count {
     font-size: .8rem; background: rgba(255,255,255,.25); border-radius: 999px; padding: 1px 8px; font-variant-numeric: tabular-nums;
   }
@@ -89,7 +115,7 @@
   @media (max-width: 419px) {
     .stat { padding: 5px 10px; font-size: .85rem; }
     .stat .num { font-size: 1rem; }
-    .profile-btn { font-size: .95rem; }
+    .profile-btn { font-size: .95rem; gap: 4px; padding: 4px; }
   }
   @media (max-width: 359px) {
     .profile-btn .p-ico { display: none; }
@@ -471,7 +497,12 @@
     </div>
     <span class="mode-pill" id="modePill">📋 קטלוג</span>
   </div>
-  <div class="profile-switch" id="profileSwitch" role="radiogroup" aria-label="בחירת רשימה"></div>
+  <div class="profile-switch">
+    <div class="profile-list" id="profileSwitch" role="radiogroup" aria-label="בחירת רשימה"></div>
+    <button type="button" class="profile-add" id="addUserBtn" aria-label="הוספת משתמש חדש" title="הוספת משתמש חדש">
+      <span class="pa-ico" aria-hidden="true">➕</span><span class="pa-text">משתמש חדש</span>
+    </button>
+  </div>
 </header>
 
 <div class="sticky">
@@ -585,6 +616,32 @@
   </div>
 </div>
 
+<!-- Add user modal -->
+<div class="modal-backdrop" id="userModal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="userTitle">
+    <div class="modal-head">
+      <h2 id="userTitle">👤 הוספת משתמש חדש</h2>
+      <button type="button" class="modal-close" data-close aria-label="סגירה">✕</button>
+    </div>
+    <form id="userForm" novalidate>
+      <div class="field">
+        <label for="userName">שם המשתמש</label>
+        <input type="text" id="userName" maxlength="25" placeholder="לדוגמה: משפחת כהן" autocomplete="off" enterkeyhint="done">
+        <div class="error" id="userError"></div>
+      </div>
+      <div class="field" role="radiogroup" aria-labelledby="userIconLabel">
+        <span class="field-label" id="userIconLabel">אייקון</span>
+        <div class="icon-picker" id="userIconPicker"></div>
+      </div>
+      <p class="confirm-note">✔️ למשתמש החדש תהיה רשימת קניות עצמאית משלו.</p>
+      <div class="modal-actions">
+        <button type="submit" class="btn btn-green">💾 צור משתמש</button>
+        <button type="button" class="btn btn-ghost" data-close>ביטול</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Confirm modal -->
 <div class="modal-backdrop" id="confirmModal" aria-hidden="true">
   <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMsg">
@@ -690,6 +747,17 @@
     { id: 'malamed', name: 'משפחת מלמד', icon: '👨‍👩‍👧‍👦' },
     { id: 'evyatar', name: 'אביתר ותמר', icon: '💑' }
   ];
+  const USERS_KEY = STORAGE_KEY + '.customProfiles';
+  const USER_ICONS = ['👤', '👨‍👩‍👧', '👪', '🏡', '🧑‍🤝‍🧑', '👵', '👴', '🧒', '🐶', '⭐', '🌸', '🎈'];
+  // Header colours for user-created profiles (built-in profiles keep their CSS colours)
+  const USER_PALETTES = [
+    { c: '#b45309', bg: '#fef3c7', g: 'linear-gradient(135deg, #f59e0b 0%, #b45309 100%)' },
+    { c: '#be185d', bg: '#fce7f3', g: 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)' },
+    { c: '#1d4ed8', bg: '#dbeafe', g: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' },
+    { c: '#0e7490', bg: '#cffafe', g: 'linear-gradient(135deg, #06b6d4 0%, #0e7490 100%)' },
+    { c: '#c2410c', bg: '#ffedd5', g: 'linear-gradient(135deg, #f97316 0%, #c2410c 100%)' },
+    { c: '#4d7c0f', bg: '#ecfccb', g: 'linear-gradient(135deg, #84cc16 0%, #4d7c0f 100%)' }
+  ];
   const NEW_CAT_VALUE = '__new__';
   const FILTERS = ['all', 'needed', 'urgent', 'notNeeded'];
 
@@ -697,8 +765,31 @@
      Profiles – each profile is a fully independent saved list
      ========================================================== */
   function profileKey(pid) { return STORAGE_KEY + '.profile.' + pid; }
+
+  function loadCustomProfiles() {
+    try {
+      const list = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+      if (!Array.isArray(list)) return [];
+      return list.filter(function (p) {
+        return p && typeof p.id === 'string' && typeof p.name === 'string' &&
+          !PROFILES.some(function (b) { return b.id === p.id; });
+      }).map(function (p) {
+        return { id: p.id, name: p.name, icon: p.icon || '👤', palette: +p.palette || 0, custom: true };
+      });
+    } catch (e) { return []; }
+  }
+  let customProfiles = loadCustomProfiles();
+
+  function saveCustomProfiles() {
+    try {
+      localStorage.setItem(USERS_KEY, JSON.stringify(customProfiles));
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function getProfiles() { return PROFILES.concat(customProfiles); }
   function getProfile(pid) {
-    return PROFILES.find(function (p) { return p.id === pid; }) || PROFILES[0];
+    return getProfiles().find(function (p) { return p.id === pid; }) || PROFILES[0];
   }
 
   // A list saved before profiles existed becomes the first profile's list
@@ -735,7 +826,7 @@
         products.push(makeProduct('d-' + cat.id + '-' + i, name, cat.id, false));
       });
     });
-    return { version: 1, categories: categories, products: products, ui: defaultUi() };
+    return { version: 1, categories: categories, products: products, removed: [], ui: defaultUi() };
   }
 
   function makeProduct(id, name, catId, custom) {
@@ -753,6 +844,8 @@
       if (!s.ui.expanded || typeof s.ui.expanded !== 'object') s.ui.expanded = {};
       if (FILTERS.indexOf(s.ui.filter) === -1) s.ui.filter = 'all';
       if (s.ui.mode !== 'shopping') s.ui.mode = 'catalog';
+      // Built-in products this profile removed (must not be re-added by mergeNewDefaults)
+      if (!Array.isArray(s.removed)) s.removed = [];
       // Guarantee every product points to an existing category
       const catIds = new Set(s.categories.map(function (c) { return c.id; }));
       s.products.forEach(function (p) {
@@ -771,7 +864,7 @@
 
   // Adds built-in categories/products introduced in newer versions to an existing saved catalog
   function mergeNewDefaults(s) {
-    const productIds = new Set(s.products.map(function (p) { return p.id; }));
+    const productIds = new Set(s.products.map(function (p) { return p.id; }).concat(s.removed || []));
     DEFAULT_CATALOG.forEach(function (cat, idx) {
       if (!s.categories.some(function (c) { return c.id === cat.id; })) {
         const prev = idx > 0 ? DEFAULT_CATALOG[idx - 1].id : null;
@@ -851,6 +944,12 @@
     confirmMsg: $('#confirmMsg'),
     confirmNote: $('#confirmNote'),
     confirmOk: $('#confirmOk'),
+    addUserBtn: $('#addUserBtn'),
+    userModal: $('#userModal'),
+    userForm: $('#userForm'),
+    userName: $('#userName'),
+    userError: $('#userError'),
+    userIconPicker: $('#userIconPicker'),
     toast: $('#toast')
   };
 
@@ -935,23 +1034,34 @@
   function renderProfiles() {
     const active = getProfile(activeProfileId);
     document.body.dataset.profile = active.id;
+    const pal = active.custom ? USER_PALETTES[active.palette % USER_PALETTES.length] : null;
+    const bodyStyle = document.body.style;
+    if (pal) {
+      bodyStyle.setProperty('--profile', pal.c);
+      bodyStyle.setProperty('--profile-bg', pal.bg);
+      bodyStyle.setProperty('--profile-grad', pal.g);
+    } else {
+      bodyStyle.removeProperty('--profile');
+      bodyStyle.removeProperty('--profile-bg');
+      bodyStyle.removeProperty('--profile-grad');
+    }
     document.title = 'רשימת קניות – ' + active.name;
     els.profileBadge.textContent = active.icon + ' ' + active.name;
 
-    els.profileSwitch.innerHTML = PROFILES.map(function (p) {
+    els.profileSwitch.innerHTML = getProfiles().map(function (p) {
       const isActive = p.id === activeProfileId;
       const count = remainingCount(isActive ? state : loadState(p.id));
-      return '<button type="button" class="profile-btn" role="radio" data-profile="' + p.id + '"' +
+      return '<button type="button" class="profile-btn" role="radio" data-profile="' + esc(p.id) + '"' +
         ' aria-checked="' + isActive + '" tabindex="' + (isActive ? '0' : '-1') + '"' +
-        ' aria-label="' + esc(p.name) + ' – ' + count + ' מוצרים לקנייה">' +
-        '<span class="p-ico" aria-hidden="true">' + p.icon + '</span>' +
-        '<span>' + esc(p.name) + '</span>' +
+        ' aria-label="' + esc(p.name) + ' – ' + count + ' מוצרים לקנייה" title="' + esc(p.name) + '">' +
+        '<span class="p-ico" aria-hidden="true">' + esc(p.icon) + '</span>' +
+        '<span class="p-name">' + esc(p.name) + '</span>' +
         '<span class="p-count" aria-hidden="true">' + count + '</span>' +
       '</button>';
     }).join('');
   }
 
-  function switchProfile(pid) {
+  function switchProfile(pid, silent) {
     pid = getProfile(pid).id;
     if (pid === activeProfileId) return;
     saveState();
@@ -966,7 +1076,7 @@
     forcedClosed.clear();
     render();
     window.scrollTo(0, 0);
-    toast(getProfile(pid).icon + ' עברתם לרשימה של ' + getProfile(pid).name);
+    if (!silent) toast(getProfile(pid).icon + ' עברתם לרשימה של ' + getProfile(pid).name);
   }
 
   function renderStats() {
@@ -1082,9 +1192,8 @@
       html += '<button type="button" class="urg-btn ' + (p.urgent ? 'is-urgent' : 'not-urgent') + '" data-action="urgent" data-id="' + id + '"' +
         ' aria-pressed="' + p.urgent + '" title="הקישו לשינוי דחיפות">' + (p.urgent ? '🔥 דחוף' : '🕒 לא דחוף') + '</button>';
     }
-    if (p.custom) {
-      html += '<button type="button" class="del-btn" data-action="delete" data-id="' + id + '" aria-label="מחיקת ' + esc(p.name) + ' מהקטלוג" title="מחיקה מהקטלוג">🗑️</button>';
-    }
+    html += '<button type="button" class="del-btn" data-action="delete" data-id="' + id + '"' +
+      ' aria-label="הסרת ' + esc(p.name) + ' מהרשימה שלי" title="הסרה מהרשימה שלי בלבד">🗑️</button>';
     return html + '</li>';
   }
 
@@ -1276,7 +1385,7 @@
     openConfirm({
       title: '🔄 איפוס רשימת הקניות',
       message: 'האם לאפס את רשימת הקניות של "' + profileName + '"? כל סימוני הקנייה וסימוני הדחיפות ברשימה זו יימחקו.',
-      note: '✔️ כל המוצרים בקטלוג, כולל מוצרים וקטגוריות שהוספתם, יישמרו. הרשימה השנייה לא תושפע.',
+      note: '✔️ כל המוצרים בקטלוג, כולל מוצרים וקטגוריות שהוספתם, יישמרו. הרשימות של שאר המשתמשים לא יושפעו.',
       okText: 'כן, אפס רשימה',
       onOk: function () {
         state.products.forEach(function (p) { p.needed = false; p.urgent = false; p.purchased = false; });
@@ -1298,16 +1407,18 @@
 
   function deleteProduct(id) {
     const p = getProduct(id);
-    if (!p || !p.custom) return;
+    if (!p) return;
+    const profileName = getProfile(activeProfileId).name;
     openConfirm({
-      title: '🗑️ מחיקת מוצר',
-      message: 'למחוק את "' + p.name + '" מהקטלוג לצמיתות?',
-      note: '',
-      okText: 'כן, מחק',
+      title: '🗑️ הסרת מוצר',
+      message: 'להסיר את "' + p.name + '" מהרשימה של "' + profileName + '"?',
+      note: '✔️ המוצר יוסר רק מהרשימה של "' + profileName + '". הרשימות של שאר המשתמשים לא יושפעו.',
+      okText: 'כן, הסר',
       onOk: function () {
         state.products = state.products.filter(function (x) { return x.id !== id; });
+        if (!p.custom && state.removed.indexOf(id) === -1) state.removed.push(id);
         commit();
-        toast('המוצר נמחק מהקטלוג');
+        toast('🗑️ "' + p.name + '" הוסר מהרשימה של ' + profileName);
       }
     });
   }
@@ -1466,6 +1577,54 @@
   }
 
   /* ==========================================================
+     Add user
+     ========================================================== */
+  function openUserModal() {
+    els.userForm.reset();
+    els.userError.textContent = '';
+    els.userIconPicker.innerHTML = USER_ICONS.map(function (icon, i) {
+      return '<label><input type="radio" name="userIcon" value="' + icon + '"' + (i === 0 ? ' checked' : '') +
+        ' aria-label="אייקון ' + icon + '"><span aria-hidden="true">' + icon + '</span></label>';
+    }).join('');
+    openModal(els.userModal, els.userName);
+  }
+
+  function submitUserForm(e) {
+    e.preventDefault();
+    els.userError.textContent = '';
+    const name = els.userName.value.trim().replace(/\s+/g, ' ');
+    if (!name) {
+      els.userError.textContent = 'נא להזין שם משתמש';
+      els.userName.focus();
+      return;
+    }
+    if (getProfiles().some(function (p) { return normalize(p.name) === normalize(name); })) {
+      els.userError.textContent = 'כבר קיים משתמש בשם זה';
+      els.userName.focus();
+      return;
+    }
+    const checked = els.userForm.querySelector('input[name="userIcon"]:checked');
+    const profile = {
+      id: uid('p-'),
+      name: name,
+      icon: checked ? checked.value : USER_ICONS[0],
+      palette: customProfiles.length % USER_PALETTES.length,
+      custom: true
+    };
+    customProfiles.push(profile);
+    if (!saveCustomProfiles()) {
+      customProfiles.pop();
+      els.userError.textContent = 'לא ניתן לשמור נתונים בדפדפן זה';
+      return;
+    }
+    // Give the new user their own saved copy of the default list
+    try { localStorage.setItem(profileKey(profile.id), JSON.stringify(buildDefaultState())); } catch (err) { /* storage unavailable */ }
+    closeModal(els.userModal);
+    switchProfile(profile.id, true);
+    toast('✅ המשתמש "' + name + '" נוצר – זו הרשימה החדשה שלו');
+  }
+
+  /* ==========================================================
      Event wiring
      ========================================================== */
   function restoreFocus(action, id) {
@@ -1555,6 +1714,11 @@
   els.newName.addEventListener('input', function () { els.nameError.textContent = ''; });
   els.newCatName.addEventListener('input', function () { els.catError.textContent = ''; });
 
+  // Add user
+  els.addUserBtn.addEventListener('click', openUserModal);
+  els.userForm.addEventListener('submit', submitUserForm);
+  els.userName.addEventListener('input', function () { els.userError.textContent = ''; });
+
   // Confirm modal
   els.confirmOk.addEventListener('click', function () {
     const fn = confirmHandler;
@@ -1578,6 +1742,7 @@
   // Keep multiple open tabs in sync
   window.addEventListener('storage', function (e) {
     if (e.key === profileKey(activeProfileId)) { state = loadState(activeProfileId); render(); }
+    else if (e.key === USERS_KEY) { customProfiles = loadCustomProfiles(); renderProfiles(); }
     else if (e.key && e.key.indexOf(STORAGE_KEY + '.profile.') === 0) renderProfiles();
   });
 
@@ -1589,10 +1754,12 @@
   els.profileSwitch.addEventListener('keydown', function (e) {
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(e.key) === -1) return;
     e.preventDefault();
-    const idx = PROFILES.findIndex(function (p) { return p.id === activeProfileId; });
-    const next = PROFILES[(idx + 1) % PROFILES.length].id;
+    const profiles = getProfiles();
+    const idx = profiles.findIndex(function (p) { return p.id === activeProfileId; });
+    const step = (e.key === 'ArrowLeft' || e.key === 'ArrowDown') ? 1 : -1; // RTL: left = next
+    const next = profiles[(idx + step + profiles.length) % profiles.length].id;
     switchProfile(next);
-    const btn = els.profileSwitch.querySelector('[data-profile="' + next + '"]');
+    const btn = els.profileSwitch.querySelector('[data-profile="' + CSS.escape(next) + '"]');
     if (btn) btn.focus();
   });
 
